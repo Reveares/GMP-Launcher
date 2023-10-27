@@ -24,6 +24,7 @@ public slots:
 
 private:
     void setLineEditsEnabled(bool enabled);
+    bool writeConnectFile(const QString& url, uint16_t port, const QString& nickname);
 
     Ui::MainWindow *m_pUi;
     ServerModel *m_pServerModel;

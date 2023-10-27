@@ -21,6 +21,7 @@
 #include "dialoginfo.h"
 #include "server.h"
 #include "options.h"
+#include "QStandardPaths"
 
 #ifndef __unix__
 #include <windows.h>
@@ -136,26 +137,13 @@ void MainWindow::startProcess()
     workingDir += "/system";
     s.endGroup();
 
-	int row = index.front().row();
-    QString url = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString();
-    uint16_t port = static_cast<uint16_t>(m_pServerModel->data(m_pServerModel->index(row, Server::P_Port), Qt::DisplayRole).toUInt());
-    QString nick = m_pServerModel->data(m_pServerModel->index(row, Server::P_Nick), Qt::DisplayRole).toString();
-
-    // format of gmp_connect.cfg
-    // nickname=Nickname
-    // ip=127.0.0.1
-    // port=28960
-
-    QString filename;
     QString name;
     if (!workingDir.isEmpty())
     {
-        filename = workingDir + "/gmp_connect.cfg";
         name = workingDir + "/" + s.value("gothic_binary", "Gothic2.exe").toString();
     }
     else
     {
-        filename = "gmp_connect.cfg";
         name = s.value("gothic_binary", "Gothic2.exe").toString();
     }
 
@@ -167,15 +155,13 @@ void MainWindow::startProcess()
 		return;
 	}
 
-    QFile connectConf(filename);
-    if (!connectConf.open(QFile::WriteOnly))
-    {
-        QMessageBox::critical(this, "Error", "Couldn't open " + filename);
-    }
-    else
-    {
-        connectConf.write(("nickname=" + nick + "\nip=" + url + "\nport=" + QString::number(port)).toLocal8Bit());
-        connectConf.close();
+    int row = index.front().row();
+    QString url = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString();
+    uint16_t port = static_cast<uint16_t>(m_pServerModel->data(m_pServerModel->index(row, Server::P_Port), Qt::DisplayRole).toUInt());
+    QString nick = m_pServerModel->data(m_pServerModel->index(row, Server::P_Nick), Qt::DisplayRole).toString();
+
+    if (!writeConnectFile(url, port, nick)) {
+        return;
     }
 
     //-zMaxFrameRate: -zlog: -zwindow -zreparse nomenu -vdfs:physicalfirst
@@ -284,4 +270,29 @@ void MainWindow::setLineEditsEnabled(bool enabled)
     m_pUi->labelUrl->setEnabled(enabled);
     m_pUi->editAlias->setEnabled(enabled);
     m_pUi->nickname->setEnabled(enabled);
+}
+
+bool MainWindow::writeConnectFile(const QString& url, uint16_t port, const QString& nickname) {
+    // format of gmp_connect.cfg
+    // nickname=Nickname
+    // ip=127.0.0.1
+    // port=28960
+
+    QString filename = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    if (filename.isEmpty()) {
+        QMessageBox::critical(this, "Error", "Couldn't get TempLocation.");
+        return false;
+    }
+    filename += "/gmp_connect.cfg";
+
+    QFile connectConf(filename);
+    if (!connectConf.open(QFile::WriteOnly))
+    {
+        QMessageBox::critical(this, "Error", "Couldn't open " + filename);
+        return false;
+    }
+
+    connectConf.write(("nickname=" + nickname + "\nip=" + url + "\nport=" + QString::number(port)).toLocal8Bit());
+    connectConf.close();
+    return true;
 }
