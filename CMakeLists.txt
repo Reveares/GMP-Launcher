@@ -1,90 +1,126 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.16)
 
-# project name
-project(GothicMultiplayerLauncher)
-# executable name
-set(TARGET_NAME gml)
+project(GothicMultiplayerLauncher LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(SLIKENET_ENABLE_SAMPLES OFF CACHE INTERNAL "")
+set(SLIKENET_ENABLE_DLL OFF CACHE INTERNAL "")
+add_subdirectory(libs/slikenet)
 
 find_package(Git REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Gui REQUIRED)
-find_package(Threads REQUIRED)
+find_package(Qt6 CONFIG REQUIRED COMPONENTS Widgets)
+
+qt_standard_project_setup()
+set(CMAKE_AUTORCC ON)
 
 execute_process(COMMAND
-    "${GIT_EXECUTABLE}" tag
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE GIT_TAG
-    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+        "${GIT_EXECUTABLE}" tag
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE GIT_TAG
+        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
 execute_process(COMMAND
-    "${GIT_EXECUTABLE}" log -1 --pretty=format:%h --no-show-signature
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE GIT_COMMIT
-    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+        "${GIT_EXECUTABLE}" log -1 --pretty=format:%h --no-show-signature
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE GIT_COMMIT
+        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
 execute_process(COMMAND
-    "${GIT_EXECUTABLE}" log -1 --date=format:%Y-%m-%d\ %H:%M:%S --pretty=format:%ad --no-show-signature
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE GIT_DATE
-    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+        "${GIT_EXECUTABLE}" log -1 --date=format:%Y-%m-%d\ %H:%M:%S --pretty=format:%ad --no-show-signature
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE GIT_DATE
+        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/resource.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/resource.h" @ONLY)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
-add_subdirectory(lib/slikenet)
-
-# list include files to variables
-file (GLOB_RECURSE INCLUDE_FILES
-    LIST_DIRECTORIES false
-    include/*.h
+qt_add_executable(GothicMultiplayerLauncher
+        src/dialogaddserver.cpp
+        src/dialogaddserver.ui
+        src/dialoginfo.cpp
+        src/dialoginfo.ui
+        src/gmpclient.cpp
+        src/main.cpp
+        src/mainwindow.cpp
+        src/mainwindow.ui
+        src/options.cpp
+        src/options.ui
+        src/server.cpp
+        src/servermodel.cpp
+        resource/resource.qrc
+        resource/resource.rc
 )
 
-# list source files to variables
-file (GLOB_RECURSE SRC_FILES
-    src/*.cpp
-    src/*.h
+set_target_properties(GothicMultiplayerLauncher PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        OUTPUT_NAME "gml"
+        WIN32_EXECUTABLE ON # Prevent the creation of a console window on Windows
+        MACOSX_BUNDLE ON # Create an application bundle on macOS.
 )
 
-# list ui files to variables
-file(GLOB_RECURSE UI_FILES
-    src/*.ui
+target_link_libraries(GothicMultiplayerLauncher PRIVATE
+        Qt6::Widgets
+        SLikeNetLibStatic
 )
 
-# list resource files to variables
-file(GLOB_RECURSE RES_FILES
-    resource/*.qrc
-    resource/*.rc
+target_include_directories(GothicMultiplayerLauncher PRIVATE
+        libs/slikenet/Source/include
 )
-
-# readme for IDE recognition
-set(MISC
-    README.md
-)
-
-qt5_wrap_ui(UI_HEADERS ${UI_FILES})
-
-add_definitions(-DUNICODE)
-add_definitions(-D_UNICODE)
-
-if (MINGW OR MSVC)
-	set(SOCKET_LIB wsock32 ws2_32)
-endif()
-
-add_executable(${TARGET_NAME} ${INCLUDE_FILES} ${SRC_FILES} ${UI_HEADERS} ${RES_FILES} ${MISC})
 
 if (MSVC)
-	target_compile_options(${TARGET_NAME} PRIVATE /W3 /WX /EHsc /utf-8 /D_CRT_SECURE_NO_WARNINGS)
-    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS " /MANIFESTUAC:\"level='requireAdministrator'\" /SUBSYSTEM:windows /ENTRY:mainCRTStartup")
-else()
-	target_compile_options(${TARGET_NAME} PRIVATE -std=c++14 -fpermissive -static-libstdc++ -static-libgcc -Wall -Wextra -O3 -s -Wclobbered -Wignored-qualifiers -Wuninitialized -Wold-style-cast -Wreorder -Wno-unused-parameter -Wno-unknown-pragmas -Wno-unused-function -fno-rtti -fno-jump-tables -ffunction-sections -fdata-sections -fstack-protector-strong -Wl,--gc-sections -Wl,--strip-all)
-endif()
+    target_compile_definitions(GothicMultiplayerLauncher PRIVATE
+            WIN32_LEAN_AND_MEAN
+            UNICODE
+            _UNICODE
+            _CRT_SECURE_NO_WARNINGS
+    )
+    target_compile_options(GothicMultiplayerLauncher PRIVATE
+            /W4
+            /WX
+            /permissive-
+            /EHsc
+            /utf-8
+    )
 
-target_link_libraries(${TARGET_NAME} Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT} RakNetLibStatic ${SOCKET_LIB})
-target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/slikenet/Source/include ${CMAKE_CURRENT_SOURCE_DIR} ${Qt5Widgets_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} ${Qt5Network_INCLUDE_DIRS} ${Qt5Multimedia_INCLUDE_DIRS})
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        find_program(TOOL_WINDEPLOYQT NAMES windeployqt.debug.bat)
+    else ()
+        find_program(TOOL_WINDEPLOYQT NAMES windeployqt)
+    endif ()
+
+    add_custom_command(TARGET GothicMultiplayerLauncher POST_BUILD
+            COMMAND ${TOOL_WINDEPLOYQT} --no-compiler-runtime
+            $<TARGET_FILE:GothicMultiplayerLauncher>
+            COMMENT "Running windeployqt..."
+    )
+else ()
+    target_compile_options(GothicMultiplayerLauncher PRIVATE
+            -fpermissive
+            -static-libstdc++
+            -static-libgcc
+            -Wall
+            -Wextra
+            -O3
+            -s
+            -Wclobbered
+            -Wignored-qualifiers
+            -Wuninitialized
+            -Wold-style-cast
+            -Wreorder
+            -Wno-unused-parameter
+            -Wno-unknown-pragmas
+            -Wno-unused-function
+            -fno-rtti
+            -fno-jump-tables
+            -ffunction-sections
+            -fdata-sections
+            -fstack-protector-strong
+            -Wl,--gc-sections
+            -Wl,--strip-all
+    )
+endif ()

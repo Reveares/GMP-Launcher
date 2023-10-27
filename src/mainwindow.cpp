@@ -97,7 +97,6 @@ MainWindow::MainWindow() :
         delete pDialog;
     });
 
-    connect(m_pUi->actionQuit, &QAction::triggered, []() { qApp->quit(); });
     connect(m_pUi->actionOptions, &QAction::triggered, []()
     {
         Options *pOptions = new Options;

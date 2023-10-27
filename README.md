@@ -1,12 +1,19 @@
-# GothicMultiplayerLauncher
+# Gothic Multiplayer Launcher
 
-Travis [![Build Status](https://travis-ci.org/GothicMultiplayerAccrescere/Launcher.svg?branch=master)](https://travis-ci.org/GothicMultiplayerAccrescere/Launcher)
-AppVeyor [![Build status](https://ci.appveyor.com/api/projects/status/5os41lukcvwrxiir?svg=true)](https://ci.appveyor.com/project/alexroot-/launcher)
+## Getting started
 
-This is a new launcher for the GMP.
+Clone with submodules, like `git clone --recurse-submodules {URL}`
 
-## Galery
-![](https://raw.githubusercontent.com/truepaddii/GothicMultiplayerLauncher/master/mainwindow.png)
+#### Windows
+
+Install Visual Studio 2022 with C++ Toolchain.
+```shell
+cmake -S . -B build -A Win32 "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake"
+cmake --build build --config Release
+```
+
+## Preview
+![](docs/mainwindow.jpg)
 
 ## License
-[WTFPL](https://github.com/TRUEPADDii/GothicMultiplayerLauncher/blob/master/LICENSE)
+[MIT](LICENSE)

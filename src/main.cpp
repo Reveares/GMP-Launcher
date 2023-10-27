@@ -1,16 +1,16 @@
 // EXTERNAL INCLUDES
 #include <QApplication>
-#include <QStyleFactory>
 #include <QMessageBox>
 
 // INTERNAL INCLUDES
 #include "mainwindow.h"
+#include "resource.h"
 
 int main(int argc, char *argv[])
 {
     QApplication::setApplicationDisplayName("GMP Launcher");
     QApplication::setApplicationName("GMP Launcher");
-    QApplication::setApplicationVersion("v0.5.3");
+    QApplication::setApplicationVersion(GIT_TAG);
     QApplication::setOrganizationName("Public domain");
 
     QApplication app(argc, argv);
@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 	pal.setBrush(QPalette::Dark, Qt::green);
 	pal.setBrush(QPalette::Mid, Qt::green);
 	pal.setBrush(QPalette::Text, QColor("#D5C7A9"));
+    pal.setBrush(QPalette::PlaceholderText, QColor("#828279"));
 	pal.setBrush(QPalette::BrightText, QColor("#D5C7A9"));
 	pal.setBrush(QPalette::ButtonText, QColor("#D5C7A9"));
 	pal.setBrush(QPalette::Base, QColor("#464754"));

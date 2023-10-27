@@ -36,4 +36,4 @@ src/resource.h
 # clion
 .idea/
 .vs/
-CMakeSettings.json
+cmake-build-*
