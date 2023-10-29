@@ -17,7 +17,7 @@ qt_standard_project_setup()
 set(CMAKE_AUTORCC ON)
 
 execute_process(COMMAND
-        "${GIT_EXECUTABLE}" tag
+        "${GIT_EXECUTABLE}" describe --tags --abbrev=0
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         OUTPUT_VARIABLE GIT_TAG
         ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
