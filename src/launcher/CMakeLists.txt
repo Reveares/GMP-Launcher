@@ -27,7 +27,7 @@ execute_process(COMMAND
         ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-configure_file("resource.h.in" "resource.h" @ONLY)
+configure_file("resource.h.in" "${PROJECT_BINARY_DIR}/include/launcher/resource.h" @ONLY)
 
 qt_add_executable(gml
         dialogaddserver.cpp
@@ -59,6 +59,7 @@ target_link_libraries(gml PRIVATE
 
 target_include_directories(gml PRIVATE
         ../../libs/slikenet/Source/include
+        ${PROJECT_BINARY_DIR}/include/launcher
 )
 
 if (MSVC)
