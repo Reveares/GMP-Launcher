@@ -123,12 +123,14 @@ void MainWindow::startProcess()
 
     const QString gothicBin = s.value("gothic_binary", "Gothic2.exe").toString();
     QFileInfo gothicExePath(gothicDir + gothicBin);
+#ifdef WIN32
     if (!gothicExePath.isExecutable())
     {
         QMessageBox::critical(this, "Error",
                               "Couldn't find Gothic EXE in path:\n" + gothicExePath.filePath() + "\n\nMake sure the path is correct.");
         return;
     }
+#endif
 
     QFileInfo gmpDllPath("gmp/gmp.dll");
     if (!gmpDllPath.isFile()) {
