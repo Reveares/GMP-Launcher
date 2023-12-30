@@ -47,7 +47,7 @@ qt_add_executable(gml
 )
 
 set_target_properties(gml PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin"
         WIN32_EXECUTABLE ON # Prevent the creation of a console window on Windows
         MACOSX_BUNDLE ON # Create an application bundle on macOS.
 )
@@ -60,6 +60,10 @@ target_link_libraries(gml PRIVATE
 target_include_directories(gml PRIVATE
         ../../libs/slikenet/Source/include
         ${PROJECT_BINARY_DIR}/include/launcher
+)
+
+add_custom_command(TARGET gml POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/bin/gmp"
 )
 
 if (MSVC)
@@ -90,27 +94,14 @@ if (MSVC)
     )
 else ()
     target_compile_options(gml PRIVATE
-            -fpermissive
-            -static-libstdc++
-            -static-libgcc
             -Wall
             -Wextra
-            -O3
-            -s
-            -Wclobbered
-            -Wignored-qualifiers
-            -Wuninitialized
-            -Wold-style-cast
-            -Wreorder
-            -Wno-unused-parameter
-            -Wno-unknown-pragmas
-            -Wno-unused-function
-            -fno-rtti
-            -fno-jump-tables
-            -ffunction-sections
-            -fdata-sections
-            -fstack-protector-strong
-            -Wl,--gc-sections
-            -Wl,--strip-all
+            -Wshadow
+            -Wnon-virtual-dtor
+            -pedantic
+    )
+
+    add_custom_command(TARGET gml POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "../../resource/gmpinjector.sh" "${PROJECT_BINARY_DIR}/bin"
     )
 endif ()

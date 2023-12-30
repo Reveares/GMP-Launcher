@@ -1,13 +1,10 @@
-// EXTERNAL INCLUDES
-#include <QApplication>
-
-// INTERNAL INCLUDES
 #include "mainwindow.h"
 #include "resource.h"
+#include <QApplication>
+#include "QStyleFactory"
 
 int main(int argc, char *argv[])
 {
-    QApplication::setApplicationDisplayName("GMP Launcher");
     QApplication::setApplicationName("GMP Launcher");
     QApplication::setApplicationVersion(GIT_TAG);
     QApplication::setOrganizationName("Public domain");
@@ -36,14 +33,11 @@ int main(int argc, char *argv[])
 	pal.setBrush(QPalette::NoRole, Qt::green);
 	pal.setBrush(QPalette::ToolTipBase, QColor("#252433"));
 	pal.setBrush(QPalette::ToolTipText, QColor("#D5C7A9"));
-    app.setPalette(pal);
-
-#ifdef _WIN32
-	app.setStyle("fusion");
-#endif
+    QApplication::setPalette(pal);
+    QApplication::setStyle(QStyleFactory::create("Fusion"));
 
     MainWindow w;
     w.show();
 
-    return app.exec();
+    return QApplication::exec();
 }
