@@ -1,4 +1,4 @@
-#include "../src/resource.h"
+#include "../src/launcher/resource.h"
 
 // Icon with lowest ID value placed first to ensure
 // the application icon remains consistent on all systems

@@ -1,9 +1,10 @@
 #include "server.h"
 
 Server::Server() :
+    m_Port{},
     m_PingCurrent(0),
-    m_pClient(new GMPClient),
-	m_ServerSeen(false)
+    m_ServerSeen(false),
+    m_pClient(new GMPClient)
 {
     connect(m_pClient, &GMPClient::serverChecked, this, &Server::updateData);
 }

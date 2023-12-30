@@ -7,9 +7,11 @@ Clone with submodules, like `git clone --recurse-submodules {URL}`
 #### Windows
 
 Install Visual Studio 2022 with C++ Toolchain.
+
+Build Launcher
 ```shell
 cmake -S . -B build -A Win32 "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake"
-cmake --build build --config Release
+cmake --build build --target gml --config Release
 ```
 Create a folder named `gmp` and add `gmp.dll` into it.
 

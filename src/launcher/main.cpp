@@ -1,6 +1,5 @@
 // EXTERNAL INCLUDES
 #include <QApplication>
-#include <QMessageBox>
 
 // INTERNAL INCLUDES
 #include "mainwindow.h"
@@ -40,7 +39,7 @@ int main(int argc, char *argv[])
     app.setPalette(pal);
 
 #ifdef _WIN32
-	qApp->setStyle("fusion");
+	app.setStyle("fusion");
 #endif
 
     MainWindow w;

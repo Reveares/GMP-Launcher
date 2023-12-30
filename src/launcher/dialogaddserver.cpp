@@ -1,11 +1,9 @@
 #include <QPushButton>
-#include <QLineEdit>
-#include <QRegularExpression>
 
 #include "dialogaddserver.h"
 #include "ui_dialogaddserver.h"
 
-const char* invalidStyle = "background-color: #B22222; color: white;";
+auto invalidStyle = QStringLiteral("background-color: #B22222; color: white;");
 // FIXME: incorporate ipv6 later if you want
 const QRegularExpression ip4Match = QRegularExpression(R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)");
 const QRegularExpression domainMatch = QRegularExpression(R"(^(([\w\d]+\.)+[\w\d]+)$)");
@@ -36,7 +34,7 @@ DialogAddServer::DialogAddServer(QWidget *parent) :
 
 		// we start changing the text: reset style and validity
 		QLineEdit* addressLine = this->m_pUi->editUrl;
-		addressLine->setStyleSheet(0);
+		addressLine->setStyleSheet(nullptr);
 		this->hasValidInput = false;
 
 	});

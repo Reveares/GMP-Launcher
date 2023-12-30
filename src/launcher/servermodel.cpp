@@ -217,7 +217,7 @@ void ServerModel::appendRecord(const QString &name, const QString &url, quint16 
 
     QSettings s;
     s.beginGroup("Misc");
-    QString defaultNick = s.value("default_nick", "Nickname").toString();
+    QString defaultNick = s.value("default_nick", "").toString();
     s.endGroup();
     s.beginWriteArray("Server");
     s.setArrayIndex(index);
