@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.21)
 find_package(Git REQUIRED)
 find_package(Qt6 CONFIG REQUIRED COMPONENTS Widgets)
 
-qt_standard_project_setup()
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 execute_process(COMMAND
@@ -102,6 +103,6 @@ else ()
     )
 
     add_custom_command(TARGET gml POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "../../resource/gmpinjector.sh" "${PROJECT_BINARY_DIR}/bin"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/resource/gmpinjector.sh" "${PROJECT_BINARY_DIR}/bin"
     )
 endif ()
