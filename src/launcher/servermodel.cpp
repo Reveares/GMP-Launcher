@@ -6,6 +6,8 @@
 #include "servermodel.h"
 #include "server.h"
 
+const auto settingServer = QStringLiteral("server");
+
 ServerModel::ServerModel(QObject *pParent) :
     QAbstractTableModel(pParent)
 { }
@@ -16,7 +18,7 @@ void ServerModel::Initialize()
 	// refresh server status every "misc/refresh_rate" or 10,000 msec
     m_Timer.setInterval(s.value("misc/refresh_rate", 10000).toInt());
 
-    int rows = s.beginReadArray("server");
+    int rows = s.beginReadArray(settingServer);
     for(int i = 0; i < rows; ++i)
     {
         s.setArrayIndex(i);
@@ -90,7 +92,7 @@ QVariant ServerModel::data(const QModelIndex &index, int role) const
 void ServerModel::updateData()
 {
     QSettings s;
-    s.beginWriteArray("Server");
+    s.beginWriteArray(settingServer);
     s.remove("");
 
     for(int i = 0, end = m_Server.size(); i < end; ++i)
@@ -216,10 +218,10 @@ void ServerModel::appendRecord(const QString &name, const QString &url, quint16 
     int index = rowCount();
 
     QSettings s;
-    s.beginGroup("Misc");
+    s.beginGroup("misc");
     QString defaultNick = s.value("default_nick", "").toString();
     s.endGroup();
-    s.beginWriteArray("Server");
+    s.beginWriteArray(settingServer);
     s.setArrayIndex(index);
     s.setValue("server_name", name);
     s.setValue("server_url", url);
