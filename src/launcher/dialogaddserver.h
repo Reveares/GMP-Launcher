@@ -17,7 +17,6 @@ public:
 private:
 
     Ui::DialogAddServer *m_pUi;
-	bool hasValidInput;
 
 signals:
     void selected(const QString &name, const QString &url, quint16 port);

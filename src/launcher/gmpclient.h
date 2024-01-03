@@ -17,10 +17,9 @@ struct ServerInfo
     QString player;
     QString bots;
     QString description;
-    int32_t averagePing;
+    int32_t averagePing{-1};
 
     bool deserialize(const uint8_t *pData, size_t maxlen, size_t &seek);
-	void empty();
 };
 
 class GMPClient : public QObject
@@ -38,6 +37,7 @@ public slots:
 
 signals:
     void serverChecked(const ServerInfo &info);
+    void startTimer();
 
 private:
     SLNet::RakPeerInterface *m_pClient;

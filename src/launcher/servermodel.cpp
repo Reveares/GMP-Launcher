@@ -243,6 +243,6 @@ Server *ServerModel::addServer(int row)
     Server *pServer = new Server;
     m_Server.insert(row, pServer);
     connect(&m_Timer, &QTimer::timeout, pServer, &Server::update);
-    connect(pServer, &Server::updated, std::bind(&ServerModel::dataChanged, this, index(0, 0), index(rowCount(), Server::P_Max - 1), QVector<int>()));
+    connect(pServer, &Server::updated, [this] { dataChanged(index(0, 0), index(rowCount(), Server::P_Max - 1), QVector<int>()); });
     return pServer;
 }

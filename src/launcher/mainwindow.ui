@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resource/resource.qrc">
+   <iconset resource="../../resource/resource.qrc">
     <normaloff>:/icons/appicon.ico</normaloff>:/icons/appicon.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -353,7 +353,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="loginTitle">
            <attribute name="title">
@@ -487,7 +487,7 @@
      <x>0</x>
      <y>0</y>
      <width>856</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSettings">
@@ -517,7 +517,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../resource/resource.qrc"/>
+  <include location="../../resource/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

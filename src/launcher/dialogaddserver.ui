@@ -17,27 +17,13 @@
    <item>
     <layout class="QFormLayout" name="formLayout">
      <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="label">
        <property name="text">
-        <string>Server name</string>
+        <string>URL*</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="editServerName">
-       <property name="inputMethodHints">
-        <set>Qt::ImhLatinOnly</set>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>URL</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
       <widget class="QLineEdit" name="editUrl">
        <property name="inputMethodHints">
         <set>Qt::ImhUrlCharactersOnly</set>
@@ -47,17 +33,17 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_3">
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Port</string>
+        <string>Alias</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QSpinBox" name="editPort">
-       <property name="maximum">
-        <number>65535</number>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="editServerName">
+       <property name="placeholderText">
+        <string>Server name</string>
        </property>
       </widget>
      </item>
@@ -80,8 +66,11 @@
      </item>
      <item>
       <widget class="QPushButton" name="buttonAddServer">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
-        <string>Ok</string>
+        <string>Add</string>
        </property>
       </widget>
      </item>
@@ -97,9 +86,8 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>editServerName</tabstop>
   <tabstop>editUrl</tabstop>
-  <tabstop>editPort</tabstop>
+  <tabstop>editServerName</tabstop>
   <tabstop>buttonAddServer</tabstop>
  </tabstops>
  <resources/>

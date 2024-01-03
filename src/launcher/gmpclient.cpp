@@ -1,5 +1,6 @@
 #include <QStringList>
 #include <QDebug>
+#include <QtConcurrent/QtConcurrent>
 
 #include <slikenet/MessageIdentifiers.h>
 #include <slikenet/BitStream.h>
@@ -10,8 +11,11 @@ GMPClient::GMPClient(QObject *pParent) :
     QObject(pParent),
     m_pClient(nullptr)
 {
-    m_Timer.setInterval(10);
+    m_Timer.setInterval(100);
     connect(&m_Timer, &QTimer::timeout, this, &GMPClient::update);
+    connect(this, &GMPClient::startTimer, this, [this] {
+        m_Timer.start();
+    });
 }
 
 GMPClient::~GMPClient()
@@ -28,24 +32,51 @@ void GMPClient::start(const QString &address, quint16 port)
     if (m_Timer.isActive())
         m_Timer.stop();
 
+    if (port == 0) {
+        ServerInfo info;
+        info.serverName = "Port 0 not allowed";
+        emit serverChecked(info);
+        return;
+    }
+
     if (m_pClient)
         SLNet::RakPeerInterface::DestroyInstance(m_pClient);
 
     m_pClient = SLNet::RakPeerInterface::GetInstance();
 
-    char password[] = "b5r6kQ6gp0GcpK4x";
+    // Avoid blocking GUI thread. Important when SLNet does domain resolving.
+    (void)QtConcurrent::run(QThreadPool::globalInstance(), [this, address, port]{
+        const char password[] = "b5r6kQ6gp0GcpK4x";
 
-    SLNet::SocketDescriptor sd;
-    m_pClient->Startup(1, &sd, 1);
-    SLNet::ConnectionAttemptResult result = m_pClient->Connect(address.toStdString().c_str(), port, password, sizeof(password) - 1);
+        SLNet::SocketDescriptor sd;
+        m_pClient->Startup(1, &sd, 1);
+        SLNet::ConnectionAttemptResult result = m_pClient->Connect(address.toStdString().c_str(), port, password, sizeof(password) - 1);
 
-    if (result != SLNet::ConnectionAttemptResult::CONNECTION_ATTEMPT_STARTED)
-    {
-        qWarning() << "could not connect to server: " << result;
-        return;
-    }
+        if (result != SLNet::ConnectionAttemptResult::CONNECTION_ATTEMPT_STARTED) {
+            ServerInfo info;
+            switch(result){
+                case SLNet::INVALID_PARAMETER:
+                    info.serverName = "Invalid Parameter";
+                    break;
+                case SLNet::CANNOT_RESOLVE_DOMAIN_NAME:
+                    info.serverName = "Can't resolve domain";
+                    break;
+                case SLNet::ALREADY_CONNECTED_TO_ENDPOINT:
+                    info.serverName = "Already connected";
+                    break;
+                case SLNet::CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS:
+                    info.serverName = "Already connecting";
+                    break;
+                case SLNet::SECURITY_INITIALIZATION_FAILED:
+                    info.serverName = "Security init failed";
+                    break;
+            }
+            emit serverChecked(info);
+            return;
+        }
 
-    m_Timer.start();
+        emit startTimer();
+    });
 }
 
 void GMPClient::update()
@@ -60,7 +91,7 @@ void GMPClient::update()
 				SLNet::BitStream stream;
 				stream.Write(MessageIdentifiers::GET_SERVER_INFO);
 
-				m_pClient->Send(&stream, HIGH_PRIORITY, RELIABLE, 0, pPacket->systemAddress, 0);
+				m_pClient->Send(&stream, HIGH_PRIORITY, RELIABLE, 0, pPacket->guid, false);
 				break;
 			}
 			case static_cast<uint8_t>(MessageIdentifiers::GET_SERVER_INFO):
@@ -81,8 +112,7 @@ void GMPClient::update()
 			case static_cast<uint8_t>(DefaultMessageIDTypes::ID_CONNECTION_ATTEMPT_FAILED):
 			{
 				ServerInfo info;
-				info.empty();
-				info.serverName = "Server doesn't respond";
+				info.serverName = "N/A";
 				emit serverChecked(info); // give info-object to checking server-object
 			}
 			[[fallthrough]];
@@ -140,15 +170,4 @@ bool ServerInfo::deserialize(const uint8_t *pData, size_t maxlen, size_t &seek)
         return false;
 
     return true;
-}
-
-void ServerInfo::empty()
-{
-	serverName = "";
-	gamemode = "";
-	version = "";
-	player = "";
-	bots = "";
-	description = "";
-	averagePing = -1;
 }

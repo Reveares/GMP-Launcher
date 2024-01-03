@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     QPalette pal(QColor("#464754"));
 	pal.setBrush(QPalette::WindowText, QColor("#D5C7A9"));
 	pal.setBrush(QPalette::Button, QColor("#252433"));
+    pal.setBrush(QPalette::Disabled, QPalette::Button, QColor("#151422"));
 	pal.setBrush(QPalette::Light, Qt::green);
 	pal.setBrush(QPalette::Midlight, Qt::green);
 	pal.setBrush(QPalette::Dark, Qt::green);
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
     pal.setBrush(QPalette::PlaceholderText, QColor("#828279"));
 	pal.setBrush(QPalette::BrightText, QColor("#D5C7A9"));
 	pal.setBrush(QPalette::ButtonText, QColor("#D5C7A9"));
+    pal.setBrush(QPalette::Disabled, QPalette::ButtonText, QColor("#92866a"));
 	pal.setBrush(QPalette::Base, QColor("#464754"));
 	pal.setBrush(QPalette::Window, QColor("#252433"));
 	pal.setBrush(QPalette::Shadow, Qt::green);

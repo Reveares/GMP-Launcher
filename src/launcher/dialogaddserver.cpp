@@ -3,10 +3,7 @@
 #include "dialogaddserver.h"
 #include "ui_dialogaddserver.h"
 
-auto invalidStyle = QStringLiteral("background-color: #B22222; color: white;");
-// FIXME: incorporate ipv6 later if you want
-const QRegularExpression ip4Match = QRegularExpression(R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)");
-const QRegularExpression domainMatch = QRegularExpression(R"(^(([\w\d]+\.)+[\w\d]+)$)");
+const QString invalidStyle = QStringLiteral("background-color: #B22222; color: white;");
 
 DialogAddServer::DialogAddServer(QWidget *parent) :
     QDialog(parent),
@@ -14,49 +11,29 @@ DialogAddServer::DialogAddServer(QWidget *parent) :
 
     m_pUi->setupUi(this);
 
-	m_pUi->editUrl->setStyleSheet(invalidStyle);
-
-	connect(m_pUi->editUrl, &QLineEdit::editingFinished, [this]() {
-
-		QLineEdit* addressLine = this->m_pUi->editUrl;
-
-		// check url for regex match and set validity
-		if (!ip4Match.match(addressLine->text()).hasMatch() && !domainMatch.match(addressLine->text()).hasMatch())
-		{
-			addressLine->setStyleSheet(invalidStyle);
-			return;
-		}
-
-		this->hasValidInput = true;
-
-	});
 	connect(m_pUi->editUrl, &QLineEdit::textChanged, [this]() {
-
-		// we start changing the text: reset style and validity
-		QLineEdit* addressLine = this->m_pUi->editUrl;
-		addressLine->setStyleSheet(nullptr);
-		this->hasValidInput = false;
-
+        QLineEdit* addressLine = this->m_pUi->editUrl;
+        const QUrl url = QUrl::fromUserInput(addressLine->text());
+        // Only allow URLs with <hostname>:<port> format.
+        if (!url.isValid() || url.hasFragment() || url.hasQuery() || url.isLocalFile() || url.port() == -1 || url.port() == 0) {
+            this->m_pUi->buttonAddServer->setEnabled(false);
+            addressLine->setStyleSheet(invalidStyle);
+        } else {
+            this->m_pUi->buttonAddServer->setEnabled(true);
+            addressLine->setStyleSheet(nullptr);
+        }
 	});
     connect(m_pUi->buttonCancel, &QPushButton::clicked, [this]() {
-
         close();
-
     });
 	connect(m_pUi->buttonAddServer, &QPushButton::clicked, [this]() {
-
 		QLineEdit* serverNameLine = this->m_pUi->editServerName;
 		QLineEdit* addressLine = this->m_pUi->editUrl;
-		quint16 port = this->m_pUi->editPort->value();
+        const QUrl url = QUrl::fromUserInput(addressLine->text());
 
-		// check validation again and send the data to the main form
-		if (addressLine->text().size() > 0 && this->hasValidInput)
-		{
-			emit selected(serverNameLine->text(), addressLine->text(), port);
-		}
+        emit selected(serverNameLine->text(), url.host(), url.port());
 
 		close();
-
 	});
 }
 
