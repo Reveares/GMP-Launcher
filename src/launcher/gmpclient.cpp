@@ -1,3 +1,5 @@
+#include <array> // for std::size()
+
 #include <QStringList>
 #include <QDebug>
 #include <QtConcurrent/QtConcurrent>
@@ -17,8 +19,9 @@ GMPClient::GMPClient(QObject *pParent) :
         m_Timer.start();
     });
 
-    SLNet::SocketDescriptor sd;
-    m_pClient->Startup(1, &sd, 1);
+    SLNet::SocketDescriptor sds[2];
+    sds[1].socketFamily = AF_INET6;
+    m_pClient->Startup(1, sds, std::size(sds));
 }
 
 GMPClient::~GMPClient()
@@ -46,32 +49,34 @@ void GMPClient::start(const QString &address, quint16 port)
     (void)QtConcurrent::run(QThreadPool::globalInstance(), [this, address, port]{
         const char password[] = "b5r6kQ6gp0GcpK4x";
 
-        SLNet::ConnectionAttemptResult result = m_pClient->Connect(address.toStdString().c_str(), port, password, sizeof(password) - 1);
-
-        if (result != SLNet::ConnectionAttemptResult::CONNECTION_ATTEMPT_STARTED) {
-            ServerInfo info;
-            switch(result){
-                case SLNet::INVALID_PARAMETER:
-                    info.serverName = "Invalid Parameter";
-                    break;
-                case SLNet::CANNOT_RESOLVE_DOMAIN_NAME:
-                    info.serverName = "Can't resolve domain";
-                    break;
-                case SLNet::ALREADY_CONNECTED_TO_ENDPOINT:
-                    info.serverName = "Already connected";
-                    break;
-                case SLNet::CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS:
-                    info.serverName = "Already connecting";
-                    break;
-                case SLNet::SECURITY_INITIALIZATION_FAILED:
-                    info.serverName = "Security init failed";
-                    break;
+        SLNet::ConnectionAttemptResult result;
+        for (unsigned int socket = 0; socket < 2; socket++) {
+            result = m_pClient->Connect(address.toStdString().c_str(), port, password, sizeof(password) - 1, nullptr, socket);
+            if (result == SLNet::CONNECTION_ATTEMPT_STARTED) {
+                emit startTimer();
+                return;
             }
-            emit serverChecked(info);
-            return;
         }
 
-        emit startTimer();
+        ServerInfo info;
+        switch(result){
+            case SLNet::INVALID_PARAMETER:
+                info.serverName = "Invalid Parameter";
+                break;
+            case SLNet::CANNOT_RESOLVE_DOMAIN_NAME:
+                info.serverName = "Can't resolve domain";
+                break;
+            case SLNet::ALREADY_CONNECTED_TO_ENDPOINT:
+                info.serverName = "Already connected";
+                break;
+            case SLNet::CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS:
+                info.serverName = "Already connecting";
+                break;
+            case SLNet::SECURITY_INITIALIZATION_FAILED:
+                info.serverName = "Security init failed";
+                break;
+        }
+        emit serverChecked(info);
     });
 }
 
