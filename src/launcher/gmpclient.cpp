@@ -1,3 +1,5 @@
+#include <array> // for std::size()
+
 #include <QStringList>
 #include <QDebug>
 #include <QtConcurrent/QtConcurrent>
@@ -9,13 +11,17 @@
 
 GMPClient::GMPClient(QObject *pParent) :
     QObject(pParent),
-    m_pClient(nullptr)
+    m_pClient(SLNet::RakPeerInterface::GetInstance())
 {
     m_Timer.setInterval(100);
     connect(&m_Timer, &QTimer::timeout, this, &GMPClient::update);
     connect(this, &GMPClient::startTimer, this, [this] {
         m_Timer.start();
     });
+
+    SLNet::SocketDescriptor sds[2];
+    sds[1].socketFamily = AF_INET6;
+    m_pClient->Startup(1, sds, std::size(sds));
 }
 
 GMPClient::~GMPClient()
@@ -26,7 +32,7 @@ GMPClient::~GMPClient()
 
 void GMPClient::start(const QString &address, quint16 port)
 {
-    if (m_pClient && m_Timer.isActive())
+    if (m_Timer.isActive())
         return;
 
     if (m_Timer.isActive())
@@ -39,49 +45,43 @@ void GMPClient::start(const QString &address, quint16 port)
         return;
     }
 
-    if (m_pClient)
-        SLNet::RakPeerInterface::DestroyInstance(m_pClient);
-
-    m_pClient = SLNet::RakPeerInterface::GetInstance();
-
     // Avoid blocking GUI thread. Important when SLNet does domain resolving.
     (void)QtConcurrent::run(QThreadPool::globalInstance(), [this, address, port]{
         const char password[] = "b5r6kQ6gp0GcpK4x";
 
-        SLNet::SocketDescriptor sd;
-        m_pClient->Startup(1, &sd, 1);
-        SLNet::ConnectionAttemptResult result = m_pClient->Connect(address.toStdString().c_str(), port, password, sizeof(password) - 1);
-
-        if (result != SLNet::ConnectionAttemptResult::CONNECTION_ATTEMPT_STARTED) {
-            ServerInfo info;
-            switch(result){
-                case SLNet::INVALID_PARAMETER:
-                    info.serverName = "Invalid Parameter";
-                    break;
-                case SLNet::CANNOT_RESOLVE_DOMAIN_NAME:
-                    info.serverName = "Can't resolve domain";
-                    break;
-                case SLNet::ALREADY_CONNECTED_TO_ENDPOINT:
-                    info.serverName = "Already connected";
-                    break;
-                case SLNet::CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS:
-                    info.serverName = "Already connecting";
-                    break;
-                case SLNet::SECURITY_INITIALIZATION_FAILED:
-                    info.serverName = "Security init failed";
-                    break;
+        SLNet::ConnectionAttemptResult result;
+        for (unsigned int socket = 0; socket < 2; socket++) {
+            result = m_pClient->Connect(address.toStdString().c_str(), port, password, sizeof(password) - 1, nullptr, socket);
+            if (result == SLNet::CONNECTION_ATTEMPT_STARTED) {
+                emit startTimer();
+                return;
             }
-            emit serverChecked(info);
-            return;
         }
 
-        emit startTimer();
+        ServerInfo info;
+        switch(result){
+            case SLNet::INVALID_PARAMETER:
+                info.serverName = "Invalid Parameter";
+                break;
+            case SLNet::CANNOT_RESOLVE_DOMAIN_NAME:
+                info.serverName = "Can't resolve domain";
+                break;
+            case SLNet::ALREADY_CONNECTED_TO_ENDPOINT:
+                info.serverName = "Already connected";
+                break;
+            case SLNet::CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS:
+                info.serverName = "Already connecting";
+                break;
+            case SLNet::SECURITY_INITIALIZATION_FAILED:
+                info.serverName = "Security init failed";
+                break;
+        }
+        emit serverChecked(info);
     });
 }
 
 void GMPClient::update()
 {
-	bool disconnected = false;
 	for (auto* pPacket = m_pClient->Receive(); pPacket; m_pClient->DeallocatePacket(pPacket), pPacket = m_pClient->Receive())
 	{
 		switch (static_cast<uint8_t>(pPacket->data[0]))
@@ -101,10 +101,11 @@ void GMPClient::update()
 				if (!info.deserialize(pPacket->data, pPacket->length, seek))
 				{
 					qWarning() << "invalid packet";
+					m_pClient->DeallocatePacket(pPacket);
 					return;
 				}
 
-				info.averagePing = m_pClient->GetAveragePing(pPacket->systemAddress);
+				info.averagePing = m_pClient->GetLastPing(pPacket->systemAddress);
 
 				emit serverChecked(info); // give info-object to checking server-object
 				break;
@@ -119,18 +120,10 @@ void GMPClient::update()
 			case static_cast<uint8_t>(DefaultMessageIDTypes::ID_DISCONNECTION_NOTIFICATION):
 			case static_cast<uint8_t>(DefaultMessageIDTypes::ID_REMOTE_DISCONNECTION_NOTIFICATION):
 			{
-				disconnected = true;
+				m_Timer.stop();
 				break;
 			}
 		}
-	}
-
-	// Destroy client instance outside packet loop, so the packet can be safely de-allocated in the loop.
-	if (disconnected)
-	{
-		m_Timer.stop();
-		SLNet::RakPeerInterface::DestroyInstance(m_pClient);
-		m_pClient = nullptr;
 	}
 }
 
