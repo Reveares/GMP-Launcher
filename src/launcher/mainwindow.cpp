@@ -13,9 +13,6 @@
 #include "dialoginfo.h"
 #include "server.h"
 #include "options.h"
-#if WIN32
-#include "Windows.h"
-#endif
 
 MainWindow::MainWindow() :
     QMainWindow(nullptr),
@@ -121,48 +118,40 @@ void MainWindow::startProcess()
     const QString gothicDir = s.value("working_directory", QCoreApplication::applicationDirPath()).toString() + "/System/";
     s.endGroup();
 
-    const QString gothicBin = s.value("gothic_binary", "Gothic2.exe").toString();
-    QFileInfo gothicExePath(gothicDir + gothicBin);
-#ifdef WIN32
-    if (!gothicExePath.isExecutable())
-    {
-        QMessageBox::critical(this, "Error",
-                              "Couldn't find Gothic EXE in path:\n" + gothicExePath.filePath() + "\n\nMake sure the path is correct.");
-        return;
-    }
-#endif
-
-    QFileInfo gmpDllPath("gmp/gmp.dll");
-    if (!gmpDllPath.isFile()) {
-        QMessageBox::critical(this, "Error", "Couldn't find GMP DLL in path:\n" + gmpDllPath.filePath() +
-                                             "\n\nMake sure the file exists and is not blocked by an anti virus.");
-        return;
-    }
+    const QFileInfo gothicExePath(gothicDir + s.value("gothic_binary", "Gothic2.exe").toString());
+    const QFileInfo gmpDllPath(s.value("gmp_dll", "gmp/gmp.dll").toString());
 
     const int row = index.front().row();
-    QString host = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString()
+    const QString host = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString()
             + '|'
             + QString::number(m_pServerModel->data(m_pServerModel->index(row, Server::P_Port), Qt::DisplayRole).toUInt());
     const QString nick = m_pServerModel->data(m_pServerModel->index(row, Server::P_Nick), Qt::DisplayRole).toString();
 
-    int result;
-#ifdef WIN32
-    const std::wstring program(L"gmpinjector.exe");
-    std::wstring command =
-            program + L" \"--gothic=" + gothicExePath.filePath().toStdWString() + L"\" \"--gmp=" + gmpDllPath.absoluteFilePath().toStdWString() +
-                L"\" \"--host=" + host.toStdWString() + L"\" \"--nickname=" + nick.toStdWString() + L"\"";
+#ifdef _WIN32
+    const QString program = QStringLiteral("gmpinjector.exe");
+#else
+    const QString program = QStringLiteral("./gmpinjector.sh");
+#endif
 
+    QString command = QStringLiteral("\"%1\" \"--gothic=%2\" \"--gmp=%3\" \"--host=%4\" \"--nickname=%5\"")
+            .arg(program, gothicExePath.filePath(), gmpDllPath.filePath(), host, nick);
+
+    int result;
+    QString error;
+#ifdef _WIN32
     PROCESS_INFORMATION pi{};
     STARTUPINFOW si{};
     si.cb = sizeof(si);
-    if (CreateProcessW(program.c_str(), command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+    if (CreateProcessW(program.toStdWString().c_str(), command.toStdWString().data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
         if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_TIMEOUT) {
+            error = QString("WaitForSingleObject time out");
             TerminateProcess(pi.hProcess, EXIT_FAILURE);
             result = EXIT_FAILURE;
         } else {
             DWORD ec;
             GetExitCodeProcess(pi.hProcess, &ec);
             result = static_cast<int>(ec);
+            error = "Unkown error"; // TODO: Get stdout from process
         }
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
@@ -170,14 +159,22 @@ void MainWindow::startProcess()
         result = EXIT_FAILURE;
     }
 #else
-    const std::string command =
-            "./gmpinjector.sh \"--gothic=" + gothicExePath.filePath().toStdString() + "\" \"--gmp=" + gmpDllPath.filePath().toStdString() +
-            "\" \"--host=" + host.toStdString() + "\" \"--nickname=" + nick.toStdString() + "\"";
-    result = system(command.c_str());
+    command += " 2>&1"; // Redirect stderr to stdout
+    FILE* pipe = popen(command.toStdString().c_str(), "r");
+    if (pipe) {
+        char buffer[128];
+        while (std::fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            error += buffer;
+        }
+        result = pclose(pipe);
+    } else {
+        error = QString("Couldn't execute command: \"%1\".\nerrno: %2").arg(command, std::strerror(errno));
+        result = EXIT_FAILURE;
+    }
 #endif
 
     if (result != EXIT_SUCCESS) {
-        QMessageBox::critical(this, "Error", "Couldn't start GMP.");
+        QMessageBox::critical(this, "Error", error);
     }
 }
 
