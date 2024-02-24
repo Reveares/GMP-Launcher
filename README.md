@@ -1,31 +1,33 @@
-# Gothic Multiplayer Launcher
+# Gothic Multiplayer Launcher (GML)
 
 ## Getting started
 
-Clone with submodules, like `git clone --recurse-submodules {URL}`
+Clone with submodules, like `git clone --recurse-submodules https://github.com/Reveares/GMP-Launcher`
 
-#### Windows
+### Windows
 
 Install Visual Studio 2022 with C++ Toolchain.
+Of course, Qt6 can also be installed as a pre-build library instead of building it with vcpkg.
 
-Build Launcher
+#### Build
+
 ```bash
 cmake -S . -B build -A Win32 "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake"
 cmake --build build --target gml --config Release
 ```
 Go to the build folder and add `gmp/gmp.dll` into it.
 
-#### Ubuntu
+### Ubuntu
 
-Build Launcher
+#### Build
 ```bash
-apt install git cmake gcc g++ qt6-base-dev libssl-dev
-cmake -S . -B
+apt install git cmake build-essential qt6-base-dev libssl-dev
+cmake -S . -B build
 cmake --build build --target gml --config Release
 ```
 Go to the build folder and add `gmp/gmp.dll` into it. Also copy or cross compile `gmpinjector.exe`.
 
-Run
+#### Run
 ```bash
 sudo dpkg --add-architecture i386
 sudo apt update
