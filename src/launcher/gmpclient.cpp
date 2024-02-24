@@ -1,7 +1,6 @@
 #include <array> // for std::size()
 
 #include <QStringList>
-#include <QDebug>
 #include <QtConcurrent/QtConcurrent>
 
 #include <slikenet/MessageIdentifiers.h>
@@ -47,7 +46,7 @@ void GMPClient::start(const QString &address, quint16 port)
 
     // Avoid blocking GUI thread. Important when SLNet does domain resolving.
     (void)QtConcurrent::run(QThreadPool::globalInstance(), [this, address, port]{
-        const char password[] = "b5r6kQ6gp0GcpK4x";
+        constexpr char password[] = "b5r6kQ6gp0GcpK4x";
 
         SLNet::ConnectionAttemptResult result;
         for (unsigned int socket = 0; socket < 2; socket++) {
@@ -75,6 +74,8 @@ void GMPClient::start(const QString &address, quint16 port)
             case SLNet::SECURITY_INITIALIZATION_FAILED:
                 info.serverName = "Security init failed";
                 break;
+            default:
+                break;
         }
         emit serverChecked(info);
     });
@@ -84,7 +85,7 @@ void GMPClient::update()
 {
 	for (auto* pPacket = m_pClient->Receive(); pPacket; m_pClient->DeallocatePacket(pPacket), pPacket = m_pClient->Receive())
 	{
-		switch (static_cast<uint8_t>(pPacket->data[0]))
+		switch (pPacket->data[0])
 		{
 			case static_cast<uint8_t>(DefaultMessageIDTypes::ID_CONNECTION_REQUEST_ACCEPTED):
 			{

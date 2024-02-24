@@ -68,12 +68,7 @@ add_custom_command(TARGET gml POST_BUILD
 )
 
 if (MSVC)
-    target_compile_definitions(gml PRIVATE
-            WIN32_LEAN_AND_MEAN
-            UNICODE
-            _UNICODE
-            _CRT_SECURE_NO_WARNINGS
-    )
+    target_compile_definitions(gml PRIVATE WIN32_LEAN_AND_MEAN)
     target_compile_options(gml PRIVATE
             /W4
             /WX
