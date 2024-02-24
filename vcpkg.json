@@ -1,12 +1,14 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "gothic-multiplayer-launcher",
-  "version": "0.1.0",
   "dependencies": [
     {
       "name": "qtbase",
-      "features": ["gui", "widgets"]
+      "features": [
+        "gui",
+        "widgets"
+      ]
     },
     "qttools"
-  ]
+  ],
+  "builtin-baseline": "fba75d09065fcc76a25dcf386b1d00d33f5175af"
 }
