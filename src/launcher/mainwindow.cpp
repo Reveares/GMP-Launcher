@@ -151,7 +151,7 @@ void MainWindow::startProcess()
             DWORD ec;
             GetExitCodeProcess(pi.hProcess, &ec);
             result = static_cast<int>(ec);
-            error = QStringLiteral("Unkown error"); // TODO: Get stdout from process
+            error = QStringLiteral("Unknown error"); // TODO: Get stdout from process
         }
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
