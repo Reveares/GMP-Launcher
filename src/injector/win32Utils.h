@@ -1,5 +1,6 @@
 #pragma once
 #include "Windows.h"
+#include <memory>
 #include <string>
 
 inline bool isSlash(const wchar_t c) {
@@ -31,5 +32,25 @@ inline std::wstring absolutePath(const std::wstring &path) {
 
 inline bool fileExists(const std::wstring &path) {
     DWORD result = GetFileAttributesW(path.c_str());
-    return result != INVALID_FILE_ATTRIBUTES && !(result & FILE_ATTRIBUTE_DIRECTORY);
+    return result != INVALID_FILE_ATTRIBUTES && (result & FILE_ATTRIBUTE_DIRECTORY) == 0U;
+}
+
+inline bool isProcessRunning(const std::wstring &process) {
+    using unique_handle = std::unique_ptr<std::remove_pointer_t<HANDLE>, decltype(&CloseHandle)>;
+
+    const unique_handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0), CloseHandle);
+    if (snapshot.get() == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Couldn't create Toolhelp32Snapshot. GetLastError: %lu", GetLastError());
+        return false;
+    }
+    PROCESSENTRY32W pe{};
+    pe.dwSize = sizeof(pe);
+    if (Process32FirstW(snapshot.get(), &pe)) {
+        do {
+            if (pe.szExeFile == process) {
+                return true;
+            }
+        } while (Process32NextW(snapshot.get(), &pe));
+    }
+    return false;
 }

@@ -144,19 +144,20 @@ void MainWindow::startProcess()
     si.cb = sizeof(si);
     if (CreateProcessW(program.toStdWString().c_str(), command.toStdWString().data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
         if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_TIMEOUT) {
-            error = QString("WaitForSingleObject time out");
+            error = QStringLiteral("WaitForSingleObject time out");
             TerminateProcess(pi.hProcess, EXIT_FAILURE);
             result = EXIT_FAILURE;
         } else {
             DWORD ec;
             GetExitCodeProcess(pi.hProcess, &ec);
             result = static_cast<int>(ec);
-            error = "Unkown error"; // TODO: Get stdout from process
+            error = QStringLiteral("Unkown error"); // TODO: Get stdout from process
         }
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
     } else {
         result = EXIT_FAILURE;
+        error = QStringLiteral("Couldn't create Process.\nGetLastError: %1").arg(GetLastError());
     }
 #else
     command += " 2>&1"; // Redirect stderr to stdout
@@ -168,7 +169,7 @@ void MainWindow::startProcess()
         }
         result = pclose(pipe);
     } else {
-        error = QString("Couldn't execute command: \"%1\".\nerrno: %2").arg(command, std::strerror(errno));
+        error = QStringLiteral("Couldn't execute command: \"%1\".\nerrno: %2").arg(command, std::strerror(errno));
         result = EXIT_FAILURE;
     }
 #endif
