@@ -1,33 +1,33 @@
 # Gothic Multiplayer Launcher (GML)
+___
 
-## Getting started
+# Getting started
 
-Clone with submodules, like `git clone --recurse-submodules https://github.com/Reveares/GMP-Launcher`
+## Windows
 
-### Windows
+- [Visual Studio 2022 (17.6 or newer)](https://visualstudio.microsoft.com/vs/) with C++ Toolchain and the English language pack
+- [vcpkg](https://github.com/microsoft/vcpkg?tab=readme-ov-file#get-started) *(optional)*
 
-Install Visual Studio 2022 with C++ Toolchain.
-Of course, Qt6 can also be installed as a pre-build library instead of building it with vcpkg.
+Qt6 can be built with vcpkg (takes some time) or [installed](https://www.qt.io/product/qt6) as pre-build library.
 
-#### Build
+### Build
+
+After build go to the build folder and add `gmp/gmp.dll` into it.
+
+## Debian/Ubuntu
 
 ```bash
-cmake -S . -B build -A Win32 "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake"
-cmake --build build --target gml --config Release
+sudo apt install cmake build-essential qt6-base-dev libssl-dev
 ```
-Go to the build folder and add `gmp/gmp.dll` into it.
 
-### Ubuntu
-
-#### Build
+### Build
 ```bash
-apt install git cmake build-essential qt6-base-dev libssl-dev
 cmake -S . -B build
 cmake --build build --target gml --config Release
 ```
 Go to the build folder and add `gmp/gmp.dll` into it. Also copy or cross compile `gmpinjector.exe`.
 
-#### Run
+### Run
 ```bash
 sudo dpkg --add-architecture i386
 sudo apt update
@@ -41,9 +41,9 @@ To get windows-like path to your Gothic installation with winepath. In GML, set 
 ```bash
 winepath -w "/path/to/gothic"
 ```
-
-## Preview
+___
+# Preview
 ![](docs/mainwindow.jpg)
-
-## License
+___
+# License
 [MIT](LICENSE)

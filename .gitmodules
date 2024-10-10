@@ -1,6 +1,0 @@
-[submodule "vcpkg"]
-	path = vcpkg
-	url = https://github.com/microsoft/vcpkg.git
-[submodule "libs/slikenet"]
-	path = libs/slikenet
-	url = https://gitlab.com/Sabrosa/slikenet.git

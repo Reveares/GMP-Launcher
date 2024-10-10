@@ -1,0 +1,47 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}"
+    },
+    {
+      "name": "windows-x86",
+      "inherits": "base",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "X_VCPKG_APPLOCAL_DEPS_INSTALL": "ON"
+      },
+      "architecture": {
+        "value": "x86",
+        "strategy": "external"
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      },
+      "vendor": {
+        "jetbrains.com/clion": {
+          "toolchain": "Visual Studio (x86)"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-x86-debug",
+      "displayName": "Debug",
+      "configurePreset": "windows-x86",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-x86-release",
+      "displayName": "Release",
+      "configurePreset": "windows-x86",
+      "configuration": "Release"
+    }
+  ]
+}

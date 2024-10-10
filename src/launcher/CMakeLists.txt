@@ -1,7 +1,19 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.22)
 
 find_package(Git REQUIRED)
 find_package(Qt6 CONFIG REQUIRED COMPONENTS Widgets)
+
+set(SLIKENET_ENABLE_SAMPLES OFF CACHE INTERNAL "")
+set(SLIKENET_ENABLE_DLL OFF CACHE INTERNAL "")
+
+include(FetchContent)
+FetchContent_Declare(slikenet
+        GIT_REPOSITORY https://gitlab.com/Sabrosa/slikenet.git
+        GIT_TAG        0621404add46ac03decb1b46fed8fd79e982abbc
+)
+FetchContent_MakeAvailable(slikenet)
+
+qt_standard_project_setup()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -48,7 +60,6 @@ qt_add_executable(gml
 )
 
 set_target_properties(gml PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin"
         WIN32_EXECUTABLE ON # Prevent the creation of a console window on Windows
         MACOSX_BUNDLE ON # Create an application bundle on macOS.
 )
@@ -59,12 +70,8 @@ target_link_libraries(gml PRIVATE
 )
 
 target_include_directories(gml PRIVATE
-        ../../libs/slikenet/Source/include
-        ${PROJECT_BINARY_DIR}/include/launcher
-)
-
-add_custom_command(TARGET gml POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/bin/gmp"
+        "${slikenet_SOURCE_DIR}/Source/include"
+        "${PROJECT_BINARY_DIR}/include/launcher"
 )
 
 if (MSVC)
@@ -76,18 +83,6 @@ if (MSVC)
             /EHsc
             /utf-8
     )
-
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        find_program(TOOL_WINDEPLOYQT NAMES windeployqt.debug.bat)
-    else ()
-        find_program(TOOL_WINDEPLOYQT NAMES windeployqt)
-    endif ()
-
-    add_custom_command(TARGET gml POST_BUILD
-            COMMAND ${TOOL_WINDEPLOYQT} --no-compiler-runtime --no-translations
-            $<TARGET_FILE:gml>
-            COMMENT "Running windeployqt..."
-    )
 else ()
     target_compile_options(gml PRIVATE
             -Wall
@@ -98,6 +93,21 @@ else ()
     )
 
     add_custom_command(TARGET gml POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/resource/gmpinjector.sh" "${PROJECT_BINARY_DIR}/bin"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/resource/gmpinjector.sh" $<TARGET_FILE_DIR:gml>
     )
 endif ()
+
+install(TARGETS gml
+        BUNDLE  DESTINATION .
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+set(QT_DEPLOY_PLUGINS_DIR .)
+qt_generate_deploy_app_script(
+        TARGET gml
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+        NO_TRANSLATIONS
+        NO_COMPILER_RUNTIME
+)
+install(SCRIPT ${deploy_script})

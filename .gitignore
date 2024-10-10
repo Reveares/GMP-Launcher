@@ -1,39 +1,19 @@
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-*.aps
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+CMakeUserPresets.json
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-#build dir
-bin/
 build/
-test/
+install/
 
-#special files
-src/launcher/resource.h
- 
-# clion
-.idea/
-.vs/
-cmake-build-*
+/.vs/
+/.idea/
