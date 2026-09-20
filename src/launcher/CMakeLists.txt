@@ -3,13 +3,12 @@ cmake_minimum_required(VERSION 3.22)
 find_package(Git REQUIRED)
 find_package(Qt6 CONFIG REQUIRED COMPONENTS Widgets)
 
-set(SLIKENET_ENABLE_SAMPLES OFF CACHE INTERNAL "")
-set(SLIKENET_ENABLE_DLL OFF CACHE INTERNAL "")
+set(SLIKENET_INSTALL OFF CACHE INTERNAL "")
 
 include(FetchContent)
 FetchContent_Declare(slikenet
         GIT_REPOSITORY https://gitlab.com/Sabrosa/slikenet.git
-        GIT_TAG        922482ad604839db15fbd9a5f08fe5fe6b545405
+        GIT_TAG        2413cc8bd36062a4a602428519f3c7cdaa539635
 )
 FetchContent_MakeAvailable(slikenet)
 
@@ -66,11 +65,10 @@ set_target_properties(gml PROPERTIES
 
 target_link_libraries(gml PRIVATE
         Qt6::Widgets
-        SLikeNetLibStatic
+        SLikeNet::slikenet
 )
 
 target_include_directories(gml PRIVATE
-        "${slikenet_SOURCE_DIR}/Source/include"
         "${PROJECT_BINARY_DIR}/include/launcher"
 )
 
@@ -87,9 +85,9 @@ else ()
     target_compile_options(gml PRIVATE
             -Wall
             -Wextra
+            -Wpedantic
             -Wshadow
             -Wnon-virtual-dtor
-            -pedantic
     )
 
     add_custom_command(TARGET gml POST_BUILD
@@ -97,12 +95,8 @@ else ()
     )
 endif ()
 
-install(TARGETS gml
-        BUNDLE  DESTINATION .
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+install(TARGETS gml)
 
-set(QT_DEPLOY_PLUGINS_DIR .)
 qt_generate_deploy_app_script(
         TARGET gml
         OUTPUT_SCRIPT deploy_script

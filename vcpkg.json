@@ -2,10 +2,10 @@
   "$schema" : "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "dependencies" : [ {
     "name" : "qtbase",
-    "version>=" : "6.7.2#2",
+    "version>=" : "6.11.1",
     "features" : [ "gui", "widgets" ]
   }, {
     "name" : "qttools",
-    "version>=" : "6.7.2"
+    "version>=" : "6.11.1"
   } ]
 }

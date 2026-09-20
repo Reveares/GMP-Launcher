@@ -17,7 +17,4 @@ target_compile_options(gmpinjector PRIVATE
         /GR-
 )
 
-install(TARGETS gmpinjector
-        BUNDLE  DESTINATION .
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+install(TARGETS gmpinjector)
