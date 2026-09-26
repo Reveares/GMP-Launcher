@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QDataWidgetMapper>
 #include <QAction>
+#include <QDir>
 #include <QFileInfo>
 
 #include "dialogaddserver.h"
@@ -115,11 +116,14 @@ void MainWindow::startProcess()
 
     QSettings s;
     s.beginGroup("gothic");
-    const QString gothicDir = s.value("working_directory", QCoreApplication::applicationDirPath()).toString() + "/System/";
+    const QString applicationDir = QCoreApplication::applicationDirPath();
+    const QString gothicDir = s.value("working_directory", applicationDir).toString() + "/System/";
     s.endGroup();
 
     const QFileInfo gothicExePath(gothicDir + s.value("gothic_binary", "Gothic2.exe").toString());
-    const QFileInfo gmpDllPath(s.value("gmp_dll", "gmp/gmp.dll").toString());
+    QFileInfo gmpDllPath(s.value("gmp_dll", "gmp/gmp.dll").toString());
+    if (gmpDllPath.isRelative())
+        gmpDllPath.setFile(QDir(applicationDir), gmpDllPath.filePath());
 
     const int row = index.front().row();
     QString host = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString();
@@ -129,21 +133,24 @@ void MainWindow::startProcess()
     const QString nick = m_pServerModel->data(m_pServerModel->index(row, Server::P_Nick), Qt::DisplayRole).toString();
 
 #ifdef _WIN32
-    const QString program = QStringLiteral("gmpinjector.exe");
+    const QString program = QDir::toNativeSeparators(QDir(applicationDir).filePath(QStringLiteral("gmpinjector.exe")));
 #else
-    const QString program = QStringLiteral("./gmpinjector.sh");
+    const QString program = QDir(applicationDir).filePath(QStringLiteral("gmpinjector.sh"));
 #endif
 
-    QString command = QStringLiteral("\"%1\" \"--gothic=%2\" \"--gmp=%3\" \"--host=%4\" \"--nickname=%5\"")
+    QString command = QStringLiteral("\"%1\" \"--gothic=%2\" \"--dll=%3\" \"--host=%4\" \"--nickname=%5\"")
             .arg(program, gothicExePath.filePath(), gmpDllPath.filePath(), host, nick);
 
     int result;
     QString error;
 #ifdef _WIN32
+    const std::wstring programW = program.toStdWString();
+    std::wstring commandW = command.toStdWString();
+    const std::wstring workingDirW = QDir::toNativeSeparators(applicationDir).toStdWString();
     PROCESS_INFORMATION pi{};
     STARTUPINFOW si{};
     si.cb = sizeof(si);
-    if (CreateProcessW(program.toStdWString().c_str(), command.toStdWString().data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+    if (CreateProcessW(programW.c_str(), commandW.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, workingDirW.c_str(), &si, &pi)) {
         if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_TIMEOUT) {
             error = QStringLiteral("WaitForSingleObject time out");
             TerminateProcess(pi.hProcess, EXIT_FAILURE);
