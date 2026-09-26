@@ -6,6 +6,11 @@
 #include <QAction>
 #include <QDir>
 #include <QFileInfo>
+#include <QProcess>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "dialogaddserver.h"
 #include "ui_mainwindow.h"
@@ -86,13 +91,7 @@ MainWindow::MainWindow() :
         delete pDialog;
     });
 
-    connect(m_pUi->actionOptions, &QAction::triggered, []()
-    {
-        Options *pOptions = new Options;
-        pOptions->setModal(true);
-        pOptions->exec();
-        delete pOptions;
-    });
+    connect(m_pUi->actionOptions, &QAction::triggered, this, &MainWindow::openOptions);
     connect(m_pUi->actionAbout, &QAction::triggered, []()
     {
         DialogInfo *pInfo = new DialogInfo;
@@ -125,6 +124,27 @@ void MainWindow::startProcess()
     if (gmpDllPath.isRelative())
         gmpDllPath.setFile(QDir(applicationDir), gmpDllPath.filePath());
 
+#ifdef _WIN32
+    if (!gothicExePath.isFile()) {
+        showError(
+            QStringLiteral("Gothic was not found."),
+            QStringLiteral("The Gothic executable \"%1\" does not exist.\n\n"
+                           "Check the Gothic path in the options. It must point to your Gothic installation folder, "
+                           "which contains the System folder.")
+                .arg(QDir::toNativeSeparators(gothicExePath.filePath())),
+            QString(), true);
+        return;
+    }
+
+    if (!gmpDllPath.isFile()) {
+        showError(
+            QStringLiteral("The GMP client is missing."),
+            QStringLiteral("The GMP client \"%1\" does not exist. The launcher installation seems to be incomplete.")
+                .arg(QDir::toNativeSeparators(gmpDllPath.filePath())));
+        return;
+    }
+#endif
+
     const int row = index.front().row();
     QString host = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString();
     if (host.contains(':')) // IPv6 address
@@ -138,53 +158,90 @@ void MainWindow::startProcess()
     const QString program = QDir(applicationDir).filePath(QStringLiteral("gmpinjector.sh"));
 #endif
 
-    QString command = QStringLiteral("\"%1\" \"--gothic=%2\" \"--dll=%3\" \"--host=%4\" \"--nickname=%5\"")
-            .arg(program, gothicExePath.filePath(), gmpDllPath.filePath(), host, nick);
-
-    int result;
-    QString error;
+    QProcess injector;
+    injector.setWorkingDirectory(applicationDir);
+    injector.setProcessChannelMode(QProcess::MergedChannels); // Capture stdout and stderr
 #ifdef _WIN32
-    const std::wstring programW = program.toStdWString();
-    std::wstring commandW = command.toStdWString();
-    const std::wstring workingDirW = QDir::toNativeSeparators(applicationDir).toStdWString();
-    PROCESS_INFORMATION pi{};
-    STARTUPINFOW si{};
-    si.cb = sizeof(si);
-    if (CreateProcessW(programW.c_str(), commandW.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, workingDirW.c_str(), &si, &pi)) {
-        if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_TIMEOUT) {
-            error = QStringLiteral("WaitForSingleObject time out");
-            TerminateProcess(pi.hProcess, EXIT_FAILURE);
-            result = EXIT_FAILURE;
-        } else {
-            DWORD ec;
-            GetExitCodeProcess(pi.hProcess, &ec);
-            result = static_cast<int>(ec);
-            error = QStringLiteral("Unknown error"); // TODO: Get stdout from process
-        }
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-    } else {
-        result = EXIT_FAILURE;
-        error = QStringLiteral("Couldn't create Process.\nGetLastError: %1").arg(GetLastError());
-    }
-#else
-    command += " 2>&1"; // Redirect stderr to stdout
-    FILE* pipe = popen(command.toStdString().c_str(), "r");
-    if (pipe) {
-        char buffer[128];
-        while (std::fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-            error += buffer;
-        }
-        result = pclose(pipe);
-    } else {
-        error = QStringLiteral("Couldn't execute command: \"%1\".\nerrno: %2").arg(command, std::strerror(errno));
-        result = EXIT_FAILURE;
-    }
+    injector.setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *args)
+    {
+        args->flags |= CREATE_NO_WINDOW;
+    });
 #endif
 
-    if (result != EXIT_SUCCESS) {
-        QMessageBox::critical(this, "Error", error);
+    const QStringList arguments{
+        QStringLiteral("--gothic=%1").arg(gothicExePath.filePath()),
+        QStringLiteral("--dll=%1").arg(gmpDllPath.filePath()),
+        QStringLiteral("--host=%1").arg(host),
+        QStringLiteral("--nickname=%1").arg(nick),
+    };
+    injector.start(program, arguments);
+
+    if (!injector.waitForStarted()) {
+        showError(
+            QStringLiteral("The GMP injector could not be started."),
+            QStringLiteral("The injector \"%1\" could not be executed. The launcher installation seems to be "
+                           "incomplete, or the file is blocked by security software.")
+                .arg(QDir::toNativeSeparators(program)),
+            injector.errorString());
+        return;
     }
+
+    if (!injector.waitForFinished(-1)) {
+        injector.kill();
+        injector.waitForFinished();
+        showError(
+            QStringLiteral("The GMP injector stopped responding."),
+            QStringLiteral("The injector \"%1\" did not finish and was terminated.")
+                .arg(QDir::toNativeSeparators(program)),
+            injector.errorString());
+        return;
+    }
+
+    const QString injectorOutput = QString::fromLocal8Bit(injector.readAllStandardOutput()).trimmed();
+    if (injector.exitStatus() != QProcess::NormalExit) {
+        showError(
+            QStringLiteral("Gothic could not be started."),
+            QStringLiteral("The GMP injector stopped unexpectedly."),
+            injectorOutput);
+        return;
+    }
+
+    if (injector.exitCode() != EXIT_SUCCESS) {
+        QString details = QStringLiteral("Injector: %1\nExit code: %2")
+                .arg(QDir::toNativeSeparators(program))
+                .arg(injector.exitCode());
+        if (!injectorOutput.isEmpty())
+            details += QStringLiteral("\n\n") + injectorOutput;
+        showError(
+            QStringLiteral("Gothic could not be started."),
+            QStringLiteral("The GMP injector reported an error."),
+            details);
+    }
+}
+
+void MainWindow::openOptions()
+{
+    Options *pOptions = new Options(this);
+    pOptions->setModal(true);
+    pOptions->exec();
+    delete pOptions;
+}
+
+void MainWindow::showError(const QString &summary, const QString &informativeText,
+                           const QString &details, bool offerOptions)
+{
+    QMessageBox box(QMessageBox::Critical, QStringLiteral("Could not start Gothic"), summary, QMessageBox::Ok, this);
+    box.setInformativeText(informativeText);
+    if (!details.isEmpty())
+        box.setDetailedText(details);
+
+    QPushButton *pOptionsButton = nullptr;
+    if (offerOptions)
+        pOptionsButton = box.addButton(QStringLiteral("Open Options"), QMessageBox::ActionRole);
+
+    box.exec();
+    if (pOptionsButton != nullptr && box.clickedButton() == pOptionsButton)
+        openOptions();
 }
 
 void MainWindow::setLineEditsEnabled(bool enabled)

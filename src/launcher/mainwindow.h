@@ -23,6 +23,9 @@ public slots:
 
 private:
     void setLineEditsEnabled(bool enabled);
+    void openOptions();
+    void showError(const QString &summary, const QString &informativeText,
+                   const QString &details = QString(), bool offerOptions = false);
 
     Ui::MainWindow *m_pUi;
     ServerModel *m_pServerModel;
