@@ -5,3 +5,4 @@
 #define GIT_TAG		"@GIT_TAG@"
 #define GIT_COMMIT	"@GIT_COMMIT@"
 #define GIT_DATE	"@GIT_DATE@"
+#define GIT_VERSION	@GIT_VERSION@

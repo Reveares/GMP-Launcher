@@ -39,6 +39,16 @@ execute_process(COMMAND
         ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+if (GIT_TAG MATCHES "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+    set(GIT_VERSION "${CMAKE_MATCH_1},${CMAKE_MATCH_2},${CMAKE_MATCH_3},0")
+elseif (GIT_TAG MATCHES "^v?([0-9]+)\\.([0-9]+)")
+    set(GIT_VERSION "${CMAKE_MATCH_1},${CMAKE_MATCH_2},0,0")
+elseif (GIT_TAG MATCHES "^v?([0-9]+)")
+    set(GIT_VERSION "${CMAKE_MATCH_1},0,0,0")
+else ()
+    set(GIT_VERSION "0,0,0,0")
+endif ()
+
 configure_file("resource.h.in" "${PROJECT_BINARY_DIR}/include/launcher/resource.h" @ONLY)
 
 qt_add_executable(gml
