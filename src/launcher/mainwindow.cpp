@@ -10,6 +10,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <tlhelp32.h>
 #endif
 
 #include "dialogaddserver.h"
@@ -20,6 +21,40 @@
 #include "server.h"
 #include "options.h"
 
+#ifdef _WIN32
+static bool isProcessLaunchedBy(const QString &executableName)
+{
+    const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE)
+        return false;
+
+    DWORD parentPid = 0;
+    PROCESSENTRY32W entry{};
+    entry.dwSize = sizeof(entry);
+    if (Process32FirstW(snapshot, &entry)) {
+        do {
+            if (entry.th32ProcessID == GetCurrentProcessId()) {
+                parentPid = entry.th32ParentProcessID;
+                break;
+            }
+        } while (Process32NextW(snapshot, &entry));
+    }
+
+    bool launchedBy = false;
+    if (parentPid != 0 && Process32FirstW(snapshot, &entry)) {
+        do {
+            if (entry.th32ProcessID == parentPid) {
+                launchedBy = QString::fromWCharArray(entry.szExeFile).compare(executableName, Qt::CaseInsensitive) == 0;
+                break;
+            }
+        } while (Process32NextW(snapshot, &entry));
+    }
+
+    CloseHandle(snapshot);
+    return launchedBy;
+}
+#endif
+
 MainWindow::MainWindow() :
     QMainWindow(nullptr),
     m_pUi(new Ui::MainWindow),
@@ -27,6 +62,16 @@ MainWindow::MainWindow() :
     m_pMapper(new QDataWidgetMapper(this))
 {
     m_pUi->setupUi(this);
+
+#ifdef _WIN32
+    m_SpineSession = isProcessLaunchedBy(QStringLiteral("Spine.exe"));
+#endif
+
+    QSettings s;
+    s.beginGroup("gothic");
+    if (!s.contains("user_working_directory") && s.contains("working_directory"))
+        s.setValue("user_working_directory", s.value("working_directory"));
+    s.endGroup();
 
     m_pServerModel->Initialize();
 
@@ -116,21 +161,32 @@ void MainWindow::startProcess()
     QSettings s;
     s.beginGroup("gothic");
     const QString applicationDir = QCoreApplication::applicationDirPath();
-    const QString gothicDir = s.value("working_directory", applicationDir).toString() + "/System/";
+    const QString userWorkingDir = s.value("user_working_directory", applicationDir).toString();
+#ifdef _WIN32
+    const QString spineWorkingDir = s.value("working_directory", applicationDir).toString();
+#endif
     s.endGroup();
+
+#ifdef _WIN32
+    const QString gothicDir = (m_SpineSession ? spineWorkingDir : userWorkingDir) + "/System/";
+#else
+    const QString gothicDir = userWorkingDir + "/System/";
+#endif
 
     const QFileInfo gothicExePath(gothicDir + QStringLiteral("Gothic2.exe"));
     const QFileInfo gmpDllPath(QDir(applicationDir).filePath(QStringLiteral("gmp/gmp.dll")));
 
 #ifdef _WIN32
     if (!gothicExePath.isFile()) {
+        QString hint = QStringLiteral("Check the Gothic path in the options. It must point to your Gothic installation folder, "
+                                      "which contains the System folder.");
+        if (m_SpineSession)
+            hint = QStringLiteral("Spine passed an invalid Gothic path.");
         showError(
             QStringLiteral("Gothic was not found."),
-            QStringLiteral("The Gothic executable \"%1\" does not exist.\n\n"
-                           "Check the Gothic path in the options. It must point to your Gothic installation folder, "
-                           "which contains the System folder.")
-                .arg(QDir::toNativeSeparators(gothicExePath.filePath())),
-            QString(), true);
+            QStringLiteral("The Gothic executable \"%1\" does not exist.\n\n%2")
+                .arg(QDir::toNativeSeparators(gothicExePath.filePath()), hint),
+            QString(), !m_SpineSession);
         return;
     }
 

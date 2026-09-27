@@ -39,7 +39,7 @@ Options::Options(QWidget *pParent) :
 
     QSettings s;
     s.beginGroup("gothic");
-    m_pUi->editGothicPath->setText(s.value("working_directory").toString());
+    m_pUi->editGothicPath->setText(s.value("user_working_directory").toString());
     s.endGroup();
 
     m_pUi->buttonApply->setEnabled(false);
@@ -55,6 +55,6 @@ void Options::save()
     m_pUi->buttonApply->setEnabled(false);
     QSettings s;
     s.beginGroup("gothic");
-    s.setValue("working_directory", m_pUi->editGothicPath->text());
+    s.setValue("user_working_directory", m_pUi->editGothicPath->text());
     s.endGroup();
 }

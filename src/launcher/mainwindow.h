@@ -30,4 +30,5 @@ private:
     Ui::MainWindow *m_pUi;
     ServerModel *m_pServerModel;
     QDataWidgetMapper *m_pMapper;
+    bool m_SpineSession{false};
 };
