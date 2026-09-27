@@ -119,10 +119,8 @@ void MainWindow::startProcess()
     const QString gothicDir = s.value("working_directory", applicationDir).toString() + "/System/";
     s.endGroup();
 
-    const QFileInfo gothicExePath(gothicDir + s.value("gothic_binary", "Gothic2.exe").toString());
-    QFileInfo gmpDllPath(s.value("gmp_dll", "gmp/gmp.dll").toString());
-    if (gmpDllPath.isRelative())
-        gmpDllPath.setFile(QDir(applicationDir), gmpDllPath.filePath());
+    const QFileInfo gothicExePath(gothicDir + QStringLiteral("Gothic2.exe"));
+    const QFileInfo gmpDllPath(QDir(applicationDir).filePath(QStringLiteral("gmp/gmp.dll")));
 
 #ifdef _WIN32
     if (!gothicExePath.isFile()) {
