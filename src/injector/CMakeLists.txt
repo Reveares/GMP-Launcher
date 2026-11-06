@@ -20,4 +20,5 @@ target_compile_options(gmpinjector PRIVATE
         /GR-
 )
 
-install(TARGETS gmpinjector)
+# Next to gml.exe, also when this directory is configured on its own.
+install(TARGETS gmpinjector DESTINATION .)
