@@ -103,15 +103,26 @@ else ()
     add_custom_command(TARGET gml POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/resource/gmpinjector.sh" $<TARGET_FILE_DIR:gml>
     )
+    install(PROGRAMS "${PROJECT_SOURCE_DIR}/resource/gmpinjector.sh" DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
 install(TARGETS gml)
 
-qt_generate_deploy_app_script(
-        TARGET gml
-        OUTPUT_SCRIPT deploy_script
-        NO_UNSUPPORTED_PLATFORM_ERROR
-        NO_TRANSLATIONS
-        NO_COMPILER_RUNTIME
-)
-install(SCRIPT ${deploy_script})
+# Linux uses the distribution's Qt.
+if (WIN32)
+    qt_generate_deploy_app_script(
+            TARGET gml
+            OUTPUT_SCRIPT deploy_script
+            NO_UNSUPPORTED_PLATFORM_ERROR
+            NO_TRANSLATIONS
+            NO_COMPILER_RUNTIME
+            # The launcher needs only the Windows platform, the style and .ico support.
+            DEPLOY_TOOL_OPTIONS
+            --no-opengl-sw --no-system-d3d-compiler --no-system-dxc-compiler
+            --skip-plugin-types generic,iconengines,networkinformation,tls
+            --exclude-plugins qgif,qjpeg,qsvg
+    )
+    install(SCRIPT ${deploy_script})
+    # windeployqt copies Windows' own icuuc.dll, which every supported Windows already has.
+    install(CODE [[file(REMOVE "${CMAKE_INSTALL_PREFIX}/icuuc.dll")]])
+endif ()
