@@ -21,11 +21,11 @@ jobs:
           version: ${{ env.QT_VERSION }}
           arch: win64_msvc2022_64
           cache: true
-      # vcpkg installs only OpenSSL from the manifest; Qt comes from install-qt-action. Static, so the
-      # package carries no OpenSSL DLLs.
+      # SLikeNet finds the runner's preinstalled OpenSSL; the launcher calls none of it, so the package
+      # needs no OpenSSL DLLs.
       - name: Build launcher
         run: |
-          cmake -S . -B build -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+          cmake -S . -B build -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
           cmake --build build --config Release
           cmake --install build --config Release --prefix dist
       # Gothic is 32-bit, so the injector is built for Win32 on its own. The launcher stays 64-bit.
