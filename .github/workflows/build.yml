@@ -6,6 +6,11 @@ on:
     tags: ['v*']
   pull_request:
 
+# A newer push to the same branch or PR supersedes a run still in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   QT_VERSION: 6.10.3
 
