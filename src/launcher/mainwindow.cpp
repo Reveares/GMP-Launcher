@@ -189,7 +189,9 @@ void MainWindow::startProcess()
             QString(), !m_SpineSession);
         return;
     }
+#endif
 
+    // On Linux the Gothic path is a Wine path, which only the injector can check; the DLL path is native.
     if (!gmpDllPath.isFile()) {
         showError(
             QStringLiteral("The GMP client is missing."),
@@ -197,7 +199,6 @@ void MainWindow::startProcess()
                 .arg(QDir::toNativeSeparators(gmpDllPath.filePath())));
         return;
     }
-#endif
 
     const int row = index.front().row();
     QString host = m_pServerModel->data(m_pServerModel->index(row, Server::P_Url), Qt::DisplayRole).toString();
