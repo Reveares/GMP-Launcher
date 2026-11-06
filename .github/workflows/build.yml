@@ -1,0 +1,91 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+env:
+  QT_VERSION: 6.10.3
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the version resource is read from the latest tag
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2022_64
+          cache: true
+      # SLikeNet needs OpenSSL linked statically, the package carries no OpenSSL DLLs.
+      - run: vcpkg install openssl:x64-windows-static-md
+      # Gothic is 32-bit, so the injector is built for Win32 on its own. The launcher stays 64-bit.
+      - name: Build launcher
+        run: |
+          cmake -S . -B build -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DVCPKG_MANIFEST_MODE=OFF
+          cmake --build build --config Release
+          cmake --install build --config Release --prefix dist
+      - name: Build injector
+        run: |
+          cmake -S src/injector -B build-injector -A Win32 -Wno-dev
+          cmake --build build-injector --config Release
+          cmake --install build-injector --config Release --prefix dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gml-windows
+          path: dist/
+
+  linux:
+    # Built against Ubuntu 24.04's Qt 6.4
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build qt6-base-dev libssl-dev
+      - name: Build launcher
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+          cmake --install build --prefix dist
+      # A tar keeps the executable bits that upload-artifact would drop.
+      - run: tar -cf gml-linux.tar -C dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gml-linux
+          path: gml-linux.tar
+
+  package:
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: gml-windows
+          path: windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: gml-linux
+      # The Linux launcher runs the Windows injector under Wine.
+      - name: Assemble
+        run: |
+          tar -rf gml-linux.tar -C windows ./gmpinjector.exe
+          gzip gml-linux.tar
+          (cd windows && zip -qr ../gml-windows.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gml-packages
+          path: |
+            gml-windows.zip
+            gml-linux.tar.gz
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" gml-windows.zip gml-linux.tar.gz --repo "$GITHUB_REPOSITORY" --generate-notes
