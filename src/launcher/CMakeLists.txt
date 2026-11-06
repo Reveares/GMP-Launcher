@@ -116,6 +116,13 @@ if (WIN32)
             NO_UNSUPPORTED_PLATFORM_ERROR
             NO_TRANSLATIONS
             NO_COMPILER_RUNTIME
+            # The launcher needs only the Windows platform, the style and .ico support.
+            DEPLOY_TOOL_OPTIONS
+            --no-opengl-sw --no-system-d3d-compiler --no-system-dxc-compiler
+            --skip-plugin-types generic,iconengines,networkinformation,tls
+            --exclude-plugins qgif,qjpeg,qsvg
     )
     install(SCRIPT ${deploy_script})
+    # windeployqt copies Windows' own icuuc.dll, which every supported Windows already has.
+    install(CODE [[file(REMOVE "${CMAKE_INSTALL_PREFIX}/icuuc.dll")]])
 endif ()
