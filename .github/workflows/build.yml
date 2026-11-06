@@ -26,19 +26,26 @@ jobs:
           version: ${{ env.QT_VERSION }}
           arch: win64_msvc2022_64
           cache: true
+      # Ninja runs the compiler directly, so each build needs the MSVC environment of its architecture.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
       # SLikeNet finds the runner's preinstalled OpenSSL; the launcher calls none of it, so the package
       # needs no OpenSSL DLLs.
       - name: Build launcher
         run: |
-          cmake -S . -B build -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
-          cmake --build build --config Release
-          cmake --install build --config Release --prefix "$PWD/dist"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          cmake --build build
+          cmake --install build --prefix "$PWD/dist"
       # Gothic is 32-bit, so the injector is built for Win32 on its own. The launcher stays 64-bit.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
       - name: Build injector
         run: |
-          cmake -S src/injector -B build-injector -A Win32 -Wno-dev
-          cmake --build build-injector --config Release
-          cmake --install build-injector --config Release --prefix "$PWD/dist"
+          cmake -S src/injector -B build-injector -G Ninja -DCMAKE_BUILD_TYPE=Release -Wno-dev
+          cmake --build build-injector
+          cmake --install build-injector --prefix "$PWD/dist"
       - uses: actions/upload-artifact@v4
         with:
           name: gml-windows
