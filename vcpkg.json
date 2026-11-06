@@ -1,11 +1,18 @@
 {
   "$schema" : "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "dependencies" : [ {
-    "name" : "qtbase",
-    "version>=" : "6.11.1",
-    "features" : [ "gui", "widgets" ]
-  }, {
-    "name" : "qttools",
-    "version>=" : "6.11.1"
-  } ]
+  "dependencies" : [ "openssl" ],
+  "default-features" : [ "qt" ],
+  "features" : {
+    "qt" : {
+      "description" : "Build Qt with vcpkg instead of using an installed Qt",
+      "dependencies" : [ {
+        "name" : "qtbase",
+        "version>=" : "6.11.1",
+        "features" : [ "gui", "widgets" ]
+      }, {
+        "name" : "qttools",
+        "version>=" : "6.11.1"
+      } ]
+    }
+  }
 }

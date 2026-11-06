@@ -21,14 +21,14 @@ jobs:
           version: ${{ env.QT_VERSION }}
           arch: win64_msvc2022_64
           cache: true
-      # SLikeNet needs OpenSSL linked statically, the package carries no OpenSSL DLLs.
-      - run: vcpkg install openssl:x64-windows-static-md
-      # Gothic is 32-bit, so the injector is built for Win32 on its own. The launcher stays 64-bit.
+      # vcpkg installs only OpenSSL from the manifest; Qt comes from install-qt-action. Static, so the
+      # package carries no OpenSSL DLLs.
       - name: Build launcher
         run: |
-          cmake -S . -B build -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DVCPKG_MANIFEST_MODE=OFF
+          cmake -S . -B build -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
           cmake --build build --config Release
           cmake --install build --config Release --prefix dist
+      # Gothic is 32-bit, so the injector is built for Win32 on its own. The launcher stays 64-bit.
       - name: Build injector
         run: |
           cmake -S src/injector -B build-injector -A Win32 -Wno-dev
