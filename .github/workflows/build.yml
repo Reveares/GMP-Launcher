@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: sudo apt-get update && sudo apt-get install -y ninja-build qt6-base-dev libssl-dev
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build qt6-base-dev libssl-dev
       - name: Build launcher
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
